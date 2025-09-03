@@ -12,7 +12,7 @@ namespace hexcompose
     HexComposeApp();
     ~HexComposeApp();
 
-    int run(); // message loop
+    int run();
 
   private:
     static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
