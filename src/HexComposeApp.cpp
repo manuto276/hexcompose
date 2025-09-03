@@ -2,6 +2,7 @@
 #include "util/Logging.h"
 #include "util/WinUtils.h"
 #include "hooks/CapsAccentsHook.h"
+#include "hooks/UnicodeComposeHook.h"
 #include <memory>
 
 using hexcompose::hooks::HookDecision;
@@ -15,7 +16,9 @@ namespace hexcompose
   HexComposeApp::HexComposeApp() : manager_(std::make_unique<hooks::HookManager>())
   {
     s_instance = this;
-    // Registra moduli (in futuro potrai aggiungerne altri)
+
+    // Ordine: prima UnicodeCompose (consuma i tasti della modalità), poi gli altri
+    manager_->addModule(std::make_unique<hooks::UnicodeComposeHook>());
     manager_->addModule(std::make_unique<hooks::CapsAccentsHook>());
 
     installHook();
@@ -56,13 +59,13 @@ namespace hexcompose
     {
       const KBDLLHOOKSTRUCT *k = reinterpret_cast<const KBDLLHOOKSTRUCT *>(lParam);
 
-      // Ignora eventi iniettati da noi esplicitamente
+      // Ignora input iniettato da noi (marcato)
       if ((k->flags & LLKHF_INJECTED) && k->dwExtraInfo == hexcompose::win::kHexComposeTag)
       {
         return ::CallNextHookEx(nullptr, nCode, wParam, lParam);
       }
 
-      // Prepara KeyEvent
+      // Snapshot evento
       KeyEvent ev{};
       ev.wparam = wParam;
       ev.kbd = *k;
@@ -70,10 +73,25 @@ namespace hexcompose
       ev.capsOn = hexcompose::win::IsCapsLockOn();
       hexcompose::win::GetKeyboardStateSnapshot(ev.kbdState, wParam, *k);
 
+      // PANIC HOTKEY: Ctrl+Shift+Pause/Break → chiudi app
+      const bool keyDown = (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN);
+      if (keyDown && k->vkCode == VK_CANCEL)
+      { // Pause/Break
+        bool ctrl = (ev.kbdState[VK_CONTROL] & 0x80) || (ev.kbdState[VK_LCONTROL] & 0x80) || (ev.kbdState[VK_RCONTROL] & 0x80);
+        bool shift = (ev.kbdState[VK_SHIFT] & 0x80) || (ev.kbdState[VK_LSHIFT] & 0x80) || (ev.kbdState[VK_RSHIFT] & 0x80);
+        bool alt = (ev.kbdState[VK_MENU] & 0x80) || (ev.kbdState[VK_LMENU] & 0x80) || (ev.kbdState[VK_RMENU] & 0x80);
+        if (ctrl && shift && !alt)
+        {
+          hexcompose::log::debug(L"PANIC: quitting HexCompose");
+          PostQuitMessage(0);
+          return 1;
+        }
+      }
+
       HookDecision d = s_instance->manager_->dispatch(ev);
       if (d == HookDecision::Block)
       {
-        return 1; // sopprime l'evento originale
+        return 1;
       }
     }
     return ::CallNextHookEx(nullptr, nCode, wParam, lParam);
@@ -81,7 +99,6 @@ namespace hexcompose
 
   int HexComposeApp::run()
   {
-    // Message loop "nascosto" (nessuna finestra): l'hook vive qui.
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0) > 0)
     {

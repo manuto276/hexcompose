@@ -28,7 +28,6 @@ namespace hexcompose::win
   void GetKeyboardStateSnapshot(BYTE out[256], WPARAM wparam, const KBDLLHOOKSTRUCT &k)
   {
     ::GetKeyboardState(out);
-    // Manteniamo consistente lo stato della key corrente
     if (wparam == WM_KEYDOWN || wparam == WM_SYSKEYDOWN)
     {
       out[k.vkCode] |= 0x80;
@@ -37,7 +36,6 @@ namespace hexcompose::win
     {
       out[k.vkCode] &= ~0x80;
     }
-    // Se il flag ALTDOWN è settato nel KBDLLHOOKSTRUCT, riflettilo
     if (k.flags & LLKHF_ALTDOWN)
       out[VK_MENU] |= 0x80;
   }
@@ -46,21 +44,15 @@ namespace hexcompose::win
   {
     if (len <= 0)
       return L"";
-    // Ricava locale name da HKL
     WCHAR localeName[LOCALE_NAME_MAX_LENGTH] = {0};
     LCID lcid = MAKELCID(LOWORD((UINT_PTR)hkl), SORT_DEFAULT);
     int ok = ::LCIDToLocaleName(lcid, localeName, LOCALE_NAME_MAX_LENGTH, 0);
     if (ok == 0)
-    {
-      // fallback: user default
       lstrcpyW(localeName, LOCALE_NAME_USER_DEFAULT);
-    }
-    // Uppercase
     wchar_t out[8] = {0};
     int r = ::LCMapStringEx(localeName, LCMAP_UPPERCASE, input, len, out, 8, nullptr, nullptr, 0);
     if (r > 0)
       return std::wstring(out, out + r);
-    // Fallback a towupper su singolo char
     if (len == 1)
     {
       wchar_t c = towupper(*input);
@@ -71,7 +63,6 @@ namespace hexcompose::win
 
   int KeyToUnicode(HKL hkl, const BYTE kbdState[256], const KBDLLHOOKSTRUCT &kbd, wchar_t *outBuf, int outBufLen)
   {
-    // flags per ToUnicodeEx: 0 (se necessario si potrebbero usare UI flags)
     return ::ToUnicodeEx(kbd.vkCode, kbd.scanCode, kbdState, outBuf, outBufLen, 0, hkl);
   }
 
@@ -88,7 +79,6 @@ namespace hexcompose::win
       down.ki.wVk = 0;
       down.ki.wScan = ch;
       down.ki.dwFlags = KEYEVENTF_UNICODE;
-      down.ki.time = 0;
       down.ki.dwExtraInfo = kHexComposeTag;
       inps.push_back(down);
 
@@ -111,11 +101,33 @@ namespace hexcompose::win
     {
       inps[i].type = INPUT_KEYBOARD;
       inps[i].ki.wVk = VK_BACK;
-      inps[i].ki.wScan = 0;
       inps[i].ki.dwFlags = (i == 0) ? 0 : KEYEVENTF_KEYUP;
       inps[i].ki.dwExtraInfo = kHexComposeTag;
     }
     ::SendInput(2, inps, sizeof(INPUT));
+  }
+
+  std::wstring CodepointToUtf16(uint32_t cp)
+  {
+    if (cp <= 0xFFFF)
+    {
+      if (cp >= 0xD800 && cp <= 0xDFFF)
+        return L""; // surrogati non validi
+      return std::wstring(1, (wchar_t)cp);
+    }
+    if (cp > 0x10FFFF)
+      return L"";
+    cp -= 0x10000;
+    wchar_t hi = (wchar_t)(0xD800 + (cp >> 10));
+    wchar_t lo = (wchar_t)(0xDC00 + (cp & 0x3FF));
+    return std::wstring{hi, lo};
+  }
+
+  void InjectCodepoint(uint32_t cp)
+  {
+    auto s = CodepointToUtf16(cp);
+    if (!s.empty())
+      InjectUnicodeString(s);
   }
 
 } // namespace
