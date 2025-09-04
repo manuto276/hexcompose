@@ -8,18 +8,18 @@ mkdir -p res assets docs
 
 echo "[1/4] SVG -> PNG sizes"
 if command -v rsvg-convert >/dev/null 2>&1; then
-  for S in 16 24 32 48 64 128 256; do
+  for S in 16 20 24 32 48 64 128 256; do
     rsvg-convert -w "$S" -h "$S" "$SRC" -o "assets/logo-${S}.png"
   done
 else
   echo "rsvg-convert non trovato, uso ImageMagick convert (IM6)"
-  for S in 16 24 32 48 64 128 256; do
+  for S in 16 20 24 32 48 64 128 256; do
     convert -density 1024 -background none "$SRC" -resize ${S}x${S} -strip "assets/logo-${S}.png"
   done
 fi
 
 echo "[2/4] Build ICO multi-size"
-convert assets/logo-16.png assets/logo-24.png assets/logo-32.png \
+convert assets/logo-16.png assets/logo-20.png assets/logo-24.png assets/logo-32.png \
         assets/logo-48.png assets/logo-64.png assets/logo-128.png assets/logo-256.png \
         res/hexcompose.ico
 
