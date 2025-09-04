@@ -1,0 +1,30 @@
+#include <winres.h>
+
+1 VERSIONINFO
+ FILEVERSION @HEXCOMPOSE_FILE_VERSION_COMMA@
+ PRODUCTVERSION @HEXCOMPOSE_FILE_VERSION_COMMA@
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "CompanyName",      "@HEXCOMPOSE_AUTHOR@"
+      VALUE "FileDescription",  "HexCompose"
+      VALUE "FileVersion",      "@HEXCOMPOSE_VERSION@"
+      VALUE "InternalName",     "HexCompose"
+      VALUE "OriginalFilename", "HexCompose.exe"
+      VALUE "ProductName",      "HexCompose"
+      VALUE "ProductVersion",   "@HEXCOMPOSE_VERSION@"
+      VALUE "LegalCopyright",   "Copyright (c) 2025 @HEXCOMPOSE_AUTHOR@"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x0409, 1200
+  END
+END
