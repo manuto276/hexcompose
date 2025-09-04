@@ -1,6 +1,7 @@
 #include "HexComposeApp.h"
 #include "util/Logging.h"
 #include "util/WinUtils.h"
+#include "util/TrayIcon.h"
 #include "hooks/CapsAccentsHook.h"
 #include "hooks/UnicodeComposeHook.h"
 #include <memory>
@@ -17,6 +18,13 @@ namespace hexcompose
   {
     s_instance = this;
 
+    // Tray icon con menu Exit
+    tray_ = std::make_unique<util::TrayIcon>();
+    if (!tray_->init(L"HexCompose (Ctrl+Shift+U)"))
+    {
+      hexcompose::log::debug(L"Tray icon init failed");
+    }
+
     // Ordine: prima UnicodeCompose (consuma i tasti della modalità), poi gli altri
     manager_->addModule(std::make_unique<hooks::UnicodeComposeHook>());
     manager_->addModule(std::make_unique<hooks::CapsAccentsHook>());
@@ -27,6 +35,7 @@ namespace hexcompose
   HexComposeApp::~HexComposeApp()
   {
     uninstallHook();
+    tray_.reset();
     s_instance = nullptr;
   }
 

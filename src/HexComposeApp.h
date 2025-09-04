@@ -5,6 +5,10 @@
 
 namespace hexcompose
 {
+  namespace util
+  {
+    class TrayIcon;
+  }
 
   class HexComposeApp
   {
@@ -22,6 +26,7 @@ namespace hexcompose
     static HexComposeApp *s_instance;
     HHOOK hook_ = nullptr;
     std::unique_ptr<hooks::HookManager> manager_;
+    std::unique_ptr<util::TrayIcon> tray_;
   };
 
 } // namespace

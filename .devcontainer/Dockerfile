@@ -23,6 +23,8 @@ gcc-mingw-w64 \
 g++-mingw-w64 \
 # (opzionale) test degli .exe con Wine
 wine64 \
+imagemagick \
+librsvg2-bin \
 && rm -rf /var/lib/apt/lists/*
 
 
