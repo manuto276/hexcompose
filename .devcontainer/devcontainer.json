@@ -1,0 +1,28 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": false
+    }
+  },
+  "containerEnv": {
+    "WINEDEBUG": "-all"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "twxs.cmake",
+        "ms-vscode.cpptools-extension-pack"
+      ],
+      "settings": {
+        "cmake.generator": "Ninja",
+        "cmake.configureOnOpen": false
+      }
+    }
+  }
+}
